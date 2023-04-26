@@ -1,3 +1,5 @@
+# geode42-matheditor
+
 This is repo contains the source code for my online tex editor, which you can find at https://geode42.com/math
 
 To build this project, run `npm i`<br>
