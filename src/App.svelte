@@ -67,6 +67,23 @@
     },
   })
 
+  // Doesn't work, I might come back to snippets later
+
+  // monaco.languages.registerCompletionItemProvider('tex', {
+  //   provideCompletionItems: () => {
+  //     return {
+  //       suggestions: [
+  //         {
+  //           label: 'Set environment',
+  //           kind: monaco.languages.CompletionItemKind.Snippet,
+  //           documentation: 'Set the environment',
+  //           insertText: 'asjdkl'
+  //         }
+  //       ]
+  //     }
+  //   }
+  // })
+
   let mounted = false
   let editor: monaco.editor.IStandaloneCodeEditor
   let editorContainer: HTMLDivElement
