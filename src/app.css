@@ -3,21 +3,43 @@
 @tailwind utilities;
 
 .katex {
-  font-size: 1.6em;
-}
-
-@font-face {
-  font-family: '/JetBrains Mono';
-  src: url('JetBrainsMono[wght].ttf');
+	font-size: 1.6em;
 }
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+	font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+	line-height: 1.5;
+	font-weight: 400;
 }
 
 /* Removed because it makes the things not do the working */
 /* .monaco-editor {
   padding-top: 2rem
 } */
+
+body.horizontal-resize-cursor {
+	cursor: ew-resize !important;
+}
+
+button {
+	background-color: var(--button-background);
+	border: 0.1rem solid var(--button-border);
+	border-radius: 0.5rem;
+	padding: 0.4rem;
+	color: inherit;
+}
+
+button:hover {
+	background-color: var(--button-hover-background);
+	cursor: pointer;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+input[type='number'] {
+	-moz-appearance: textfield; /* Firefox */
+}

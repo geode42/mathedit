@@ -1,33 +1,36 @@
 {
-  "name": "geode42-matheditor",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json",
-    "format": "prettier --write ."
-  },
-  "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^2.0.3",
-    "@tsconfig/svelte": "^4.0.1",
-    "@types/katex": "^0.16.0",
-    "autoprefixer": "^10.4.14",
-    "postcss": "^8.4.23",
-    "prettier": "^2.8.8",
-    "prettier-plugin-svelte": "^2.10.0",
-    "prettier-plugin-tailwindcss": "^0.2.7",
-    "svelte": "^3.57.0",
-    "svelte-check": "^2.10.3",
-    "tailwindcss": "^3.3.2",
-    "tslib": "^2.5.0",
-    "typescript": "^5.0.2",
-    "vite": "^4.3.2"
-  },
-  "dependencies": {
-    "katex": "^0.16.6",
-    "monaco-editor": "^0.37.1"
-  }
+	"name": "geode42-matheditor",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-check --tsconfig ./tsconfig.json",
+		"format": "prettier --write ."
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "^2.0.3",
+		"@tsconfig/svelte": "^4.0.1",
+		"@types/katex": "^0.16.0",
+		"autoprefixer": "^10.4.14",
+		"postcss": "^8.4.23",
+		"prettier": "^2.8.8",
+		"prettier-plugin-svelte": "^2.10.0",
+		"prettier-plugin-tailwindcss": "^0.2.7",
+		"svelte": "^3.57.0",
+		"svelte-check": "^2.10.3",
+		"tailwindcss": "^3.3.2",
+		"tslib": "^2.5.0",
+		"typescript": "^5.0.2",
+		"vite": "^4.3.2"
+	},
+	"dependencies": {
+		"@melloware/coloris": "^0.20.0",
+		"@types/mathjax": "^0.0.37",
+		"katex": "^0.16.6",
+		"mathjax": "^3.2.2",
+		"monaco-editor": "^0.37.1"
+	}
 }
