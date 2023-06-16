@@ -120,10 +120,10 @@
 		}
 
 		monaco.languages.registerCompletionItemProvider('tex', {
-			provideCompletionItems: () => {
-				return {
-					suggestions: structuredClone(suggestions),
-				}
+			triggerCharacters: ['\\'],
+			provideCompletionItems: (model: monaco.editor.ITextModel, position: monaco.Position, context: monaco.languages.CompletionContext, token: monaco.CancellationToken) => {
+				if (context.triggerKind != monaco.languages.CompletionTriggerKind.TriggerCharacter) return { suggestions: [] }
+				return { suggestions: structuredClone(suggestions) }
 			},
 		})
 	}
@@ -162,6 +162,7 @@
 			fontLigatures: true,
 			contextmenu: true,
 			lineNumbers: 'on',
+			wordBasedSuggestions: false,
 		})
 
 		const convertConvenientTexToNormalTex = convenientTex => '\\begin{aligned}\n' + convenientTex.replaceAll('\n', '\n\\\\').replaceAll('=', '&=') + '\n\\end{aligned}'
