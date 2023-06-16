@@ -77,36 +77,57 @@
 		},
 	})
 
-	monaco.languages.registerCompletionItemProvider('tex', {
-		provideCompletionItems: () => {
-			return {
-				suggestions: [
-					// Backslashes don't seem to be replaced, so they're excluded from the insert text in what feels like a hack
-					{
-						label: '\\frac',
-						kind: monaco.languages.CompletionItemKind.Snippet,
-						documentation: 'Insert a fraction',
-						insertTextRules: 4,
-						insertText: 'frac{$1}{$2}',
-					},
-					{
-						label: '\\sqrt',
-						kind: monaco.languages.CompletionItemKind.Snippet,
-						documentation: 'Insert a square root',
-						insertTextRules: 4,
-						insertText: 'sqrt{$1}',
-					},
-					{
-						label: '\\sqrt{}{}',
-						kind: monaco.languages.CompletionItemKind.Snippet,
-						documentation: 'Insert a radical with a specific index',
-						insertTextRules: 4,
-						insertText: 'sqrt{$1}{$2}',
-					},
-				],
+	async function createAutocompleteSuggestions() {
+		const functionFormats: string[] = await (await fetch('/texFunctionNames.json')).json()
+		const suggestions = []
+
+		functionFormats.forEach(fn => {
+			suggestions.push({
+				label: `\\${fn}`,
+				kind: monaco.languages.CompletionItemKind.Function,
+				insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+				insertText: fn,
+			})
+		})
+
+		const snippets = ['frac{}{}', 'sqrt{}', 'sqrt[]{}', 'text{}']
+		for (const fn of snippets) {
+			let insertText = ''
+			let placeholderNumber = 1
+			for (const c of fn) {
+				switch (c) {
+					case '{':
+						insertText += `{$${placeholderNumber++}`
+						break
+					case '[':
+						insertText += `[$${placeholderNumber++}`
+						break
+
+					default:
+						insertText += c
+						break
+				}
 			}
-		},
-	})
+
+			// The "0" makes Monaco sort the snippet above everything else
+			suggestions.push({
+				label: `\\${fn}`,
+				sortText: '0',
+				kind: monaco.languages.CompletionItemKind.Snippet,
+				insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+				insertText: insertText,
+			})
+		}
+
+		monaco.languages.registerCompletionItemProvider('tex', {
+			provideCompletionItems: () => {
+				return {
+					suggestions: structuredClone(suggestions),
+				}
+			},
+		})
+	}
+	createAutocompleteSuggestions()
 
 	let mounted = false
 	let editorAndPreviewContainer: HTMLDivElement
@@ -115,7 +136,7 @@
 	let editorContainerWrapper: HTMLDivElement
 	let editorDragIndicator: SVGElement
 	let preview: HTMLDivElement
-	let exportDialog
+	let exportDialog: HTMLDialogElement
 
 	$: (darkTheme => {
 		if (!mounted) return

@@ -34,7 +34,7 @@ export const conf: languages.LanguageConfiguration = {
 export const language = <languages.IMonarchLanguage>{
 	tokenizer: {
 		root: [
-			{ regex: /\\[a-zA-Z]+?[^{]*/, action: { token: 'tex-command' } },
+			{ regex: /\\[a-zA-Z]+/, action: { token: 'tex-command' } },
 			{ regex: /(=|&=)/, action: { token: 'tex-equals-sign' } },
 			{ regex: /\\\\/, action: { token: 'tex-newline' } },
 			{ regex: /^%.*$/, action: { token: 'comment' } },
