@@ -1,14 +1,19 @@
 # geode42-matheditor
 
-This repo contains the source code for my online TeX editor, which you can find at [math.geode42.com](https://math.geode42.com)
+This repo contains the source code for my LaTeX math editor, which you can find at [math.geode42.com](https://math.geode42.com)
 
-The website uses the [Monaco Editor](https://microsoft.github.io/monaco-editor/) (which is VSCode's editor, in case it looks familiar :) ), which I have slightly figured out how to use after many hours and lots of help from ChatGPT
+## Running locally
+Clone this repo, cd into the directory that's created, then run `npm install`, `npm run dev`
 
-The preview is rendered with [KaTeX](https://katex.org/),
+## Credits
+The website is built with [Vite](https://vitejs.dev/) and [Svelte](https://svelte.dev/)
 
-And the the image-output is created with [MathJax](https://www.mathjax.org/)'s `tex2svgPromise` function
+The editor portion of the editor uses the [Monaco Editor](https://microsoft.github.io/monaco-editor/) which is a pretty good editor that's used in the VSCode editor
 
-The JPEG export tab uses the [Coloris](https://coloris.js.org/) color-picker
+The preview is rendered with [KaTeX](https://katex.org/) because speed
 
-To download dependencies, run `npm i`<br>
-You can then use `npm run dev` to preview the website in your browser :)
+The image output is rendered with [MathJax](https://www.mathjax.org/)'s `tex2svgPromise` function because KaTeX doesn't have one
+
+The JPEG export tab uses the [Coloris](https://coloris.js.org/) color picker
+
+

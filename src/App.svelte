@@ -30,8 +30,8 @@
 		darkTheme = true
 	}
 
-	const defaultTexText = '\\begin{aligned}\n\t2x &= 10 \\\\\n\tx &= 5\n\\end{aligned}\n'
-	const defaultConvenientTexText = '2x = 10\nx = 5\n'
+	const defaultTexText = '% Fractions\n\\frac{1}{2} \\\\\n\n% Square roots\n\\sqrt{2} \\\\\n\n% Equations\n\\begin{aligned}\n\t2x &= 10 \\\\\n\tx &= 5\n\\end{aligned}\n'
+	const defaultConvenientTexText = '% Fractions\n\\frac{1}{2}\n\n% Square roots\n\\sqrt{2}\n\n% Equations\n2x = 10\nx = 5\n'
 
 	self.MonacoEnvironment = {
 		getWorker(_, label) {
@@ -165,7 +165,7 @@
 			wordBasedSuggestions: false,
 		})
 
-		const convertConvenientTexToNormalTex = convenientTex => '\\begin{aligned}\n' + convenientTex.replaceAll('\n', '\n\\\\').replaceAll('=', '&=') + '\n\\end{aligned}'
+		const convertConvenientTexToNormalTex = (convenientTex: string) => '\\begin{aligned}\n' + convenientTex.replaceAll(/(?<!%.*)\n/g, '\n\\\\').replaceAll('=', '&=') + '\n\\end{aligned}'
 
 		getFinalLatexFromEditor = () => (useConvenientTex ? convertConvenientTexToNormalTex(editor.getValue()) : editor.getValue())
 
