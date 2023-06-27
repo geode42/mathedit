@@ -1,135 +1,20 @@
 <script lang="ts">
+	// Misc
 	import katex from 'katex'
-	import * as monaco from 'monaco-editor'
-	import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
-	import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
-	import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
-	import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
-	import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 	import RadioButton from './lib/RadioButton.svelte'
+	import { onMount } from 'svelte'
+	import { closeDialogIfClickedOn } from './lib/closeDialogIfClickedOnAction'
 
+	// Monaco
+	import * as monaco from 'monaco-editor'
+	import * as monacoInits from './lib/monacoInits'
+	import * as texPatcher from './lib/texPatcher'
+
+	// Coloris
 	import '@melloware/coloris/dist/coloris.css'
 	import Coloris from '@melloware/coloris'
-	Coloris.init()
-	Coloris({ el: '#coloris', parent: '#export-dialog', alpha: false, swatches: [] })
 
-	import { onMount } from 'svelte'
-
-	import { conf, language } from './lib/texlanguage'
-
-	const editorBackgroundColors = {
-		dark: '#1D1D1D',
-		light: '#F8F8F8',
-	}
-
-	let darkTheme = false
-	let colorSchemeOverridden = false
-	let useConvenientTex = false
-
-	if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-		darkTheme = true
-	}
-
-	const defaultTexText = '% Fractions\n\\frac{1}{2} \\\\\n\n% Square roots\n\\sqrt{2} \\\\\n\n% Equations\n\\begin{aligned}\n\t2x &= 10 \\\\\n\tx &= 5\n\\end{aligned}\n'
-	const defaultConvenientTexText = '% Fractions\n\\frac{1}{2}\n\n% Square roots\n\\sqrt{2}\n\n% Equations\n2x = 10\nx = 5\n'
-
-	self.MonacoEnvironment = {
-		getWorker(_, label) {
-			if (label == 'json') return new jsonWorker()
-			if (label == 'css' || label == 'scss' || label == 'less') return new cssWorker()
-			if (label == 'html' || label == 'handlebars' || label == 'razor') return new htmlWorker()
-			if (label == 'typescript' || label == 'javascript') return new tsWorker()
-			return new editorWorker()
-		},
-	}
-
-	monaco.languages.register({
-		id: 'tex',
-	})
-
-	monaco.languages.setMonarchTokensProvider('tex', language)
-
-	monaco.languages.setLanguageConfiguration('tex', conf)
-
-	monaco.editor.defineTheme('tex-light', {
-		base: 'vs',
-		inherit: true,
-		rules: [
-			{ token: 'tex-command', foreground: 'C000E0' },
-			{ token: 'tex-equals-sign', foreground: 'C000E0' },
-			{ token: 'tex-newline', foreground: 'C000E0' },
-		],
-		colors: {
-			'editor.background': editorBackgroundColors.light,
-		},
-	})
-
-	monaco.editor.defineTheme('tex-dark', {
-		base: 'vs-dark',
-		inherit: true,
-		rules: [
-			{ token: 'tex-command', foreground: 'bf6ecc' },
-			{ token: 'tex-equals-sign', foreground: 'bf6ecc' },
-			{ token: 'tex-newline', foreground: 'bf6ecc' },
-		],
-		colors: {
-			'editor.background': editorBackgroundColors.dark,
-		},
-	})
-
-	async function createAutocompleteSuggestions() {
-		const functionFormats: string[] = await (await fetch('/texFunctionNames.json')).json()
-		const suggestions = []
-
-		functionFormats.forEach(fn => {
-			suggestions.push({
-				label: `\\${fn}`,
-				kind: monaco.languages.CompletionItemKind.Function,
-				insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-				insertText: fn,
-			})
-		})
-
-		const snippets = ['frac{}{}', 'sqrt{}', 'sqrt[]{}', 'text{}']
-		for (const fn of snippets) {
-			let insertText = ''
-			let placeholderNumber = 1
-			for (const c of fn) {
-				switch (c) {
-					case '{':
-						insertText += `{$${placeholderNumber++}`
-						break
-					case '[':
-						insertText += `[$${placeholderNumber++}`
-						break
-
-					default:
-						insertText += c
-						break
-				}
-			}
-
-			// The "0" makes Monaco sort the snippet above everything else
-			suggestions.push({
-				label: `\\${fn}`,
-				sortText: '0',
-				kind: monaco.languages.CompletionItemKind.Snippet,
-				insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-				insertText: insertText,
-			})
-		}
-
-		monaco.languages.registerCompletionItemProvider('tex', {
-			triggerCharacters: ['\\'],
-			provideCompletionItems: (model: monaco.editor.ITextModel, position: monaco.Position, context: monaco.languages.CompletionContext, token: monaco.CancellationToken) => {
-				if (context.triggerKind != monaco.languages.CompletionTriggerKind.TriggerCharacter) return { suggestions: [] }
-				return { suggestions: structuredClone(suggestions) }
-			},
-		})
-	}
-	createAutocompleteSuggestions()
-
-	let mounted = false
+	/* ------------------------------ HTML elements ----------------------------- */
 	let editorAndPreviewContainer: HTMLDivElement
 	let editor: monaco.editor.IStandaloneCodeEditor
 	let editorContainer: HTMLDivElement
@@ -137,19 +22,89 @@
 	let editorDragIndicator: SVGElement
 	let preview: HTMLDivElement
 	let exportDialog: HTMLDialogElement
+	let texPatcherDialog: HTMLDialogElement
 
-	$: (darkTheme => {
+
+	/* ------------------------------ Color picker ------------------------------ */
+	Coloris.init()
+	Coloris({ el: '#coloris', parent: '#export-dialog', alpha: false, swatches: [] })
+
+	/* -------------------- The editor portion of the editor -------------------- */
+	const editorBackgroundColors = {
+		dark: '#1D1D1D',
+		light: '#F8F8F8',
+	}
+	const defaultTexText = '% Fractions\n\\frac{1}{2} \\\\\n\n% Square roots\n\\sqrt{2} \\\\\n\n% Equations\n\\begin{aligned}\n\t2x &= 10 \\\\\n\tx &= 5\n\\end{aligned}\n'
+
+	let darkTheme = false
+	let colorSchemeOverridden = false
+	let mounted = false
+	const texPatcherConfig: texPatcher.TexPatcherConfig = {
+		autoNewlines: false,
+		commentMarker: '',
+		baseEnvironment: '',
+		equalsSignToAmpersandEquals: false,
+	}
+
+	monacoInits.setMonacoEnvironment()
+	monacoInits.registerTexLanguage()
+	monacoInits.registerThemes(editorBackgroundColors.light, editorBackgroundColors.dark)
+	monacoInits.createAutocompleteSuggestions()
+
+	// Update comment stuff when comment marker changes
+	$: texPatcherConfig.commentMarker, monacoInits.setTexLanguageStuff(texPatcherConfig.commentMarker || '%')
+
+
+	/* ------------------------------- Dark theme ------------------------------- */
+	function updateEditorTheme() {
 		if (!mounted) return
 		monaco.editor.setTheme(darkTheme ? 'tex-dark' : 'tex-light')
 		editorContainerWrapper.style.backgroundColor = darkTheme ? editorBackgroundColors.dark : editorBackgroundColors.light
-	})(darkTheme)
+	}
 
-	let renderPreview = () => {}
-	let getFinalLatexFromEditor = () => ''
+	// Auto enable dark theme
+	if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) darkTheme = true
+	
+	// Detect changes in preferred theme
+	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+		if (colorSchemeOverridden) return
+		darkTheme = event.matches
+	})
+
+	// Automatically switch themes
+	$: darkTheme, updateEditorTheme()
+
+	
+	function getFinalLatexFromEditor() {
+		if (!mounted) return ''
+		return texPatcher.compile(texPatcherConfig, editor.getValue())
+	}
+
+	function renderPreview() {
+		try {
+			preview.innerHTML = katex.renderToString(getFinalLatexFromEditor())
+			monaco.editor.setModelMarkers(editor.getModel(), 'tex', [])
+		} catch (error) {
+			let position = editor.getModel().getPositionAt(texPatcher.texPositionToTexPatchPosition(texPatcherConfig, editor.getValue(), error.position))
+
+			monaco.editor.setModelMarkers(editor.getModel(), 'tex', [
+				{
+					severity: monaco.MarkerSeverity.Error,
+					message: error.message.split(' at position')[0].split('KaTeX parse error: ').at(-1),
+					startLineNumber: position.lineNumber,
+					startColumn: position.column,
+					endLineNumber: position.lineNumber,
+					endColumn: position.column + 1,
+				},
+			])
+		}
+	}
+
+
 	onMount(() => {
 		mounted = true
 		editor = monaco.editor.create(editorContainer, {
-			value: useConvenientTex ? defaultConvenientTexText : defaultTexText,
+			value: defaultTexText,
 			language: 'tex',
 			theme: darkTheme ? 'tex-dark' : 'tex-light',
 			minimap: { enabled: false },
@@ -165,71 +120,14 @@
 			wordBasedSuggestions: false,
 		})
 
-		const convertConvenientTexToNormalTex = (convenientTex: string) => '\\begin{aligned}\n' + convenientTex.replaceAll(/(?<!%.*)\n/g, '\n\\\\').replaceAll('=', '&=') + '\n\\end{aligned}'
-
-		getFinalLatexFromEditor = () => (useConvenientTex ? convertConvenientTexToNormalTex(editor.getValue()) : editor.getValue())
-
-		renderPreview = () => {
-			try {
-				const previewElement = katex.renderToString(getFinalLatexFromEditor())
-				preview.innerHTML = previewElement
-				monaco.editor.setModelMarkers(editor.getModel(), 'tex', [])
-			} catch (error) {
-				let position = editor.getModel().getPositionAt(error.position)
-				if (useConvenientTex) {
-					let srcLocation = 0
-					let outLocation = '\\begin{aligned}\n'.length
-					for (const c of editor.getValue()) {
-						if (outLocation >= error.position) {
-							break
-						}
-						switch (c) {
-							case '\n':
-								outLocation += 3
-								break
-							case '=':
-								outLocation += 2
-								break
-
-							default:
-								outLocation += 1
-								break
-						}
-						srcLocation += 1
-					}
-					position = editor.getModel().getPositionAt(srcLocation)
-				}
-
-				monaco.editor.setModelMarkers(editor.getModel(), 'tex', [
-					{
-						severity: 8,
-						message: error.message.split(' at position')[0].split('KaTeX parse error: ').at(-1),
-						startLineNumber: position.lineNumber,
-						startColumn: position.column,
-						endLineNumber: position.lineNumber,
-						endColumn: position.column + 1,
-					},
-				])
-			}
-		}
-
-		renderPreview()
-
 		editor.onDidChangeModelContent(() => {
 			renderPreview()
 		})
 
-		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-			if (colorSchemeOverridden) return
-			darkTheme = event.matches
-		})
 		editorContainerWrapper.style.width = `${Math.min(document.body.clientWidth / 2, 600)}px`
 
-		exportDialog.addEventListener('mousedown', e => {
-			if (e.buttons == 1 && e.target == exportDialog) {
-				exportDialog.close()
-			}
-		})
+		renderPreview()
+		updateEditorTheme()
 	})
 
 	let resizingEditor = false
@@ -384,55 +282,10 @@
 		</button>
 		<button
 			on:click={() => {
-				if (editor.getValue() == (useConvenientTex ? defaultConvenientTexText : defaultTexText)) {
-					editor.setValue(useConvenientTex ? defaultTexText : defaultConvenientTexText)
-				}
-				useConvenientTex = !useConvenientTex
-				renderPreview()
+				texPatcherDialog.showModal()
 			}}
 		>
-			{#if useConvenientTex}
-				<svg
-					style="vertical-align: -0.488ex;"
-					xmlns="http://www.w3.org/2000/svg"
-					width="4.672ex"
-					height="2.033ex"
-					role="img"
-					focusable="false"
-					viewBox="0 -683 2065 898.5"
-					xmlns:xlink="http://www.w3.org/1999/xlink"
-					aria-hidden="true"
-					><defs
-						><path
-							id="MJX-24-TEX-I-1D447"
-							d="M40 437Q21 437 21 445Q21 450 37 501T71 602L88 651Q93 669 101 677H569H659Q691 677 697 676T704 667Q704 661 687 553T668 444Q668 437 649 437Q640 437 637 437T631 442L629 445Q629 451 635 490T641 551Q641 586 628 604T573 629Q568 630 515 631Q469 631 457 630T439 622Q438 621 368 343T298 60Q298 48 386 46Q418 46 427 45T436 36Q436 31 433 22Q429 4 424 1L422 0Q419 0 415 0Q410 0 363 1T228 2Q99 2 64 0H49Q43 6 43 9T45 27Q49 40 55 46H83H94Q174 46 189 55Q190 56 191 56Q196 59 201 76T241 233Q258 301 269 344Q339 619 339 625Q339 630 310 630H279Q212 630 191 624Q146 614 121 583T67 467Q60 445 57 441T43 437H40Z"
-						/><path
-							id="MJX-24-TEX-I-1D438"
-							d="M492 213Q472 213 472 226Q472 230 477 250T482 285Q482 316 461 323T364 330H312Q311 328 277 192T243 52Q243 48 254 48T334 46Q428 46 458 48T518 61Q567 77 599 117T670 248Q680 270 683 272Q690 274 698 274Q718 274 718 261Q613 7 608 2Q605 0 322 0H133Q31 0 31 11Q31 13 34 25Q38 41 42 43T65 46Q92 46 125 49Q139 52 144 61Q146 66 215 342T285 622Q285 629 281 629Q273 632 228 634H197Q191 640 191 642T193 659Q197 676 203 680H757Q764 676 764 669Q764 664 751 557T737 447Q735 440 717 440H705Q698 445 698 453L701 476Q704 500 704 528Q704 558 697 578T678 609T643 625T596 632T532 634H485Q397 633 392 631Q388 629 386 622Q385 619 355 499T324 377Q347 376 372 376H398Q464 376 489 391T534 472Q538 488 540 490T557 493Q562 493 565 493T570 492T572 491T574 487T577 483L544 351Q511 218 508 216Q505 213 492 213Z"
-						/><path
-							id="MJX-24-TEX-I-1D44B"
-							d="M42 0H40Q26 0 26 11Q26 15 29 27Q33 41 36 43T55 46Q141 49 190 98Q200 108 306 224T411 342Q302 620 297 625Q288 636 234 637H206Q200 643 200 645T202 664Q206 677 212 683H226Q260 681 347 681Q380 681 408 681T453 682T473 682Q490 682 490 671Q490 670 488 658Q484 643 481 640T465 637Q434 634 411 620L488 426L541 485Q646 598 646 610Q646 628 622 635Q617 635 609 637Q594 637 594 648Q594 650 596 664Q600 677 606 683H618Q619 683 643 683T697 681T738 680Q828 680 837 683H845Q852 676 852 672Q850 647 840 637H824Q790 636 763 628T722 611T698 593L687 584Q687 585 592 480L505 384Q505 383 536 304T601 142T638 56Q648 47 699 46Q734 46 734 37Q734 35 732 23Q728 7 725 4T711 1Q708 1 678 1T589 2Q528 2 496 2T461 1Q444 1 444 10Q444 11 446 25Q448 35 450 39T455 44T464 46T480 47T506 54Q523 62 523 64Q522 64 476 181L429 299Q241 95 236 84Q232 76 232 72Q232 53 261 47Q262 47 267 47T273 46Q276 46 277 46T280 45T283 42T284 35Q284 26 282 19Q279 6 276 4T261 1Q258 1 243 1T201 2T142 2Q64 2 42 0Z"
-						/></defs
-					><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"
-						><g data-mml-node="math"
-							><g data-mml-node="mi"><use data-c="1D447" xlink:href="#MJX-24-TEX-I-1D447" /></g><g data-mml-node="mspace" transform="translate(704,0)" /><g
-								data-mml-node="mpadded"
-								transform="translate(564,0)"
-								><g transform="translate(0,-215.5)"
-									><g data-mml-node="TeXAtom" data-mjx-texclass="ORD"><g data-mml-node="mi"><use data-c="1D438" xlink:href="#MJX-24-TEX-I-1D438" /></g></g></g
-								></g
-							><g data-mml-node="mspace" transform="translate(1328,0)" /><g data-mml-node="mi" transform="translate(1213,0)"
-								><use data-c="1D44B" xlink:href="#MJX-24-TEX-I-1D44B" /></g
-							></g
-						></g
-					></svg
-				>
-			{:else}
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-					<rect width="90" height="12" x="5" y="28" fill="currentColor" />
-					<rect width="90" height="12" x="5" y="60" fill="currentColor" />
-				</svg>
-			{/if}
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="11.5" y="11.5" width="77" height="77" rx="8" stroke="black" fill="none" stroke-width="6.8"/><rect x="31.800000000000004" y="0" width="6.8" height="23" rx="3.4"/><rect x="46.6" y="0" width="6.8" height="23" rx="3.4"/><rect x="61.4" y="0" width="6.8" height="23" rx="3.4"/><rect x="0" y="31.800000000000004" width="23" height="6.8" rx="3.4"/><rect x="0" y="46.6" width="23" height="6.8" rx="3.4"/><rect x="0" y="61.4" width="23" height="6.8" rx="3.4"/><rect x="31.800000000000004" y="77" width="6.8" height="23" rx="3.4"/><rect x="46.6" y="77" width="6.8" height="77" rx="3.4"/><rect x="61.4" y="77" width="6.8" height="23" rx="3.4"/><rect x="77" y="31.800000000000004" width="23" height="6.8" rx="3.4"/><rect x="77" y="46.6" width="23" height="6.8" rx="3.4"/><rect x="77" y="61.4" width="23" height="6.8" rx="3.4"/></svg>
 		</button>
 
 		<button
@@ -472,7 +325,7 @@
 			>
 		</a>
 	</div>
-	<dialog bind:this={exportDialog} id="export-dialog">
+	<dialog bind:this={exportDialog} use:closeDialogIfClickedOn id="export-dialog">
 		<div id="export-menu">
 			<div id="export-options">
 				<div id="export-option-buttons">
@@ -510,6 +363,29 @@
 				<span>{exportRes.width}</span><span>&times;</span><span>{exportRes.height}</span>
 			</div>
 			<div id="export-instructions">Right-click on the image above and copy it, save it, do whatever you like :)</div>
+		</div>
+	</dialog>
+	<dialog bind:this={texPatcherDialog} use:closeDialogIfClickedOn id="tex-patcher-dialog">
+		<div id="tex-patcher-menu">
+			<h2>TeX Patcher (WIP)</h2>
+			<label>
+				<input type="checkbox" bind:checked={texPatcherConfig.autoNewlines} on:change={renderPreview}>
+				<!-- For some reason there need to be four backslashes here -->
+				<!-- Maybe \b and \e aren't escape sequences, which is why the code below doesn't need double backslashes? idk -->
+				Insert a "\\\\" with every newline
+			</label>
+			<label>
+				<input bind:value={texPatcherConfig.commentMarker} on:input={renderPreview}>
+				Change the comment marker
+			</label>
+			<label>
+				<input style:width='10ch' bind:value={texPatcherConfig.baseEnvironment} on:input={renderPreview}>
+				Base environment (automatically adds "\begin" and "\end" functions for this environment)
+			</label>
+			<label>
+				<input type="checkbox" bind:checked={texPatcherConfig.equalsSignToAmpersandEquals} on:change={renderPreview}>
+				Replace every equals sign with an ampersand equals ("&=")
+			</label>
 		</div>
 	</dialog>
 </main>
@@ -572,7 +448,7 @@
 		height: 100%;
 	}
 
-	#export-dialog {
+	dialog {
 		padding: 0;
 		border-radius: 2rem;
 		overflow: visible; // To get the color picker to work
@@ -605,8 +481,24 @@
 		// The backdrop doesn't feel like animating :(
 	}
 
-	#export-menu {
+	dialog > div {
 		padding: 1.5rem;
+	}
+
+	#tex-patcher-menu {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	#tex-patcher-menu h2 {
+		font-weight: 700;
+		text-align: center;
+	}
+
+	#tex-patcher-menu input:not([type]), #tex-patcher-menu input[type=text] {
+		width: 2ch;
+		text-align: center;
 	}
 
 	#export-options {
@@ -654,7 +546,7 @@
 		opacity: 0.8;
 	}
 
-	#export-options input {
+	input:not([type]), input[type=text] {
 		box-sizing: unset;
 		width: 7ch;
 		font-family: 'JetBrains Mono';
