@@ -25,11 +25,18 @@
 		<script>
 			MathJax = {
 				tex: {
-					inlineMath: [],
+					inlineMath: []
 				},
+				output: {
+					font: 'mathjax-tex' // KaTeX compatibility
+				},
+				svg: {
+					displayAlign: 'left'
+				}
 			}
 		</script>
-		<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+		<!-- v3 doesn't support newlines, so I'm using v4 -->
+		<script src="https://cdn.jsdelivr.net/npm/mathjax@4.0.0-beta.3/tex-svg.js"></script>
 	</head>
 	<body>
 		<div id="app"></div>

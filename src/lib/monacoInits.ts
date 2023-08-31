@@ -71,7 +71,7 @@ export function setTexLanguageStuff(commentMarker: string) {
 	monaco.languages.setLanguageConfiguration('tex', conf)
 }
 
-export function registerThemes(lightModeBackground: string, darkModeBackground: string) {
+export function registerThemes(lightAccentColor: string, darkAccentColor: string) {
 	monaco.editor.defineTheme('tex-light', {
 		base: 'vs',
 		inherit: true,
@@ -81,7 +81,10 @@ export function registerThemes(lightModeBackground: string, darkModeBackground: 
 			{ token: 'tex-newline', foreground: 'C000E0' },
 		],
 		colors: {
-			'editor.background': lightModeBackground,
+			'editor.background': '#00000000',
+			'editorLineNumber.foreground': '#808080',
+			'editorLineNumber.activeForeground': '#000000',
+			// 'editor.lineHighlightBorder': '#eeeeee'
 		},
 	})
 	
@@ -94,7 +97,9 @@ export function registerThemes(lightModeBackground: string, darkModeBackground: 
 			{ token: 'tex-newline', foreground: 'bf6ecc' },
 		],
 		colors: {
-			'editor.background': darkModeBackground,
+			'editor.background': '#00000000',
+			'editorLineNumber.activeForeground': '#C6C6C6',
+			// 'editor.lineHighlightBorder': '#282828'
 		},
 	})
 }

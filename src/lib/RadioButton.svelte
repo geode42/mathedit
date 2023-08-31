@@ -16,8 +16,13 @@
 </button>
 
 <style>
+	.radio-button {
+		font-weight: 500;
+		border: none;
+		background: var(--inactive);
+	}
 	.radio-button.active {
-		background-color: var(--radio-button-active-background);
-		border-color: var(--radio-button-active-border);
+		color: white;
+		background: var(--accent);
 	}
 </style>

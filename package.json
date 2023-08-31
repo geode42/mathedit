@@ -30,6 +30,7 @@
 		"@melloware/coloris": "^0.20.0",
 		"@types/mathjax": "^0.0.37",
 		"katex": "^0.16.8",
+		"marked": "^7.0.2",
 		"mathjax": "^3.2.2",
 		"monaco-editor": "^0.37.1"
 	}

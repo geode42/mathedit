@@ -8,13 +8,15 @@ const threadBorderRadius = threadWidth / 2
 const squareBorderWidth = threadWidth
 const squareBorderRadius = 8
 
-let SVGXML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SVGWidth} ${SVGWidth}">`
+let SVGXML = `<svg xmlns=http://www.w3.org/2000/svg viewBox="0 0 ${SVGWidth} ${SVGWidth}">`
 
-function addRect(x: number, y: number, width: number, height: number, borderRadius=0, fill='', stroke='', strokeWidth=0) {
-	SVGXML += `<rect x="${x}" y="${y}" width="${width}" height="${height}"${borderRadius ? ' rx="' + borderRadius + '"' : ''}${fill ? ' stroke="' + stroke + '"' : ''}${fill ? ' fill="' + fill + '"' : ''}${strokeWidth ? ' stroke-width="' + strokeWidth + '"' : ''}/>`
+SVGXML += '<style>rect{fill:currentColor}</style>'
+
+function addRect(x: number, y: number, width: number, height: number, borderRadius=0, fill='', fillOpacity=1, stroke='', strokeWidth=0) {
+	SVGXML += `<rect x=${Math.round(x * 10)/10} y=${Math.round(y*10)/10} width=${width} height=${height}${borderRadius ? ' rx=' + borderRadius : ''}${stroke ? ' stroke=' + stroke : ''}${fill ? ' fill=' + fill : ''}${fillOpacity != 1 ? ' fill-opacity='+fillOpacity:''}${strokeWidth ? ' stroke-width=' + strokeWidth : ''}/>`
 }
 
-addRect(threadHeight / 2, threadHeight / 2, SVGWidth - threadHeight, SVGWidth - threadHeight, squareBorderRadius, 'none', 'black', squareBorderWidth)
+addRect(threadHeight / 2, threadHeight / 2, SVGWidth - threadHeight, SVGWidth - threadHeight, squareBorderRadius, '', 0, 'currentColor', squareBorderWidth)
 
 // Top
 addRect(SVGWidth / 2 - threadWidth / 2 - threadWidth - threadGap, 0, threadWidth, threadHeight, threadBorderRadius)
@@ -35,7 +37,6 @@ addRect(SVGWidth / 2 - threadWidth / 2 + threadWidth + threadGap, SVGWidth - thr
 addRect(SVGWidth - threadHeight, SVGWidth / 2 - threadWidth / 2 - threadWidth - threadGap, threadHeight, threadWidth, threadBorderRadius)
 addRect(SVGWidth - threadHeight, SVGWidth / 2 - threadWidth / 2, threadHeight, threadWidth, threadBorderRadius)
 addRect(SVGWidth - threadHeight, SVGWidth / 2 - threadWidth / 2 + threadWidth + threadGap, threadHeight, threadWidth, threadBorderRadius)
-
 
 SVGXML += '</svg>'
 

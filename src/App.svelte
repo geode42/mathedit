@@ -2,6 +2,7 @@
 	// Misc
 	import katex from 'katex'
 	import RadioButton from './lib/RadioButton.svelte'
+	import TexPatcherInput from './lib/TexPatcherInput.svelte'
 	import { onMount } from 'svelte'
 	import { closeDialogIfClickedOn } from './lib/closeDialogIfClickedOnAction'
 
@@ -27,7 +28,6 @@
 
 	/* ------------------------------ Color picker ------------------------------ */
 	Coloris.init()
-	Coloris({ el: '#coloris', parent: '#export-dialog', alpha: false, swatches: [] })
 
 	/* -------------------- The editor portion of the editor -------------------- */
 	const editorBackgroundColors = {
@@ -48,7 +48,7 @@
 
 	monacoInits.setMonacoEnvironment()
 	monacoInits.registerTexLanguage()
-	monacoInits.registerThemes(editorBackgroundColors.light, editorBackgroundColors.dark)
+	monacoInits.registerThemes('#389535', '#22BF1D')  // Very bad
 	monacoInits.createAutocompleteSuggestions()
 
 	// Update comment stuff when comment marker changes
@@ -168,24 +168,161 @@
 		}
 	})
 
-	let exportFormat = 'svg'
+	let exportFormat = 'png'
 	let exportRasterScale = 10
 	let exportLossyQualityScale = 100
-	let exportJpegBackgroundColor = '#FFFFFF'
+	let exportBackgroundColor = '#FFFFFF'
+	let exportForegroundColor = '#000000'
 	let exportPreview = document.createElement('img')
 	let exportRes = { width: 0, height: 0 }
 
-	$: exportFormat, exportRasterScale, exportLossyQualityScale, exportJpegBackgroundColor, renderExportPreview()
+	function patchTexForMathJax(tex: string) {
+		const katexColors = {
+			blue: '#6495ed',
+			orange: '#ffa500',
+			pink: '#ff00af',
+			red: '#df0030',
+			green: '#28ae7b',
+			gray: 'gray',
+			purple: '#9d38bd',
+			blueA: '#ccfaff',
+			blueB: '#80f6ff',
+			blueC: '#63d9ea',
+			blueD: '#11accd',
+			blueE: '#0c7f99',
+			tealA: '#94fff5',
+			tealB: '#26edd5',
+			tealC: '#01d1c1',
+			tealD: '#01a995',
+			tealE: '#208170',
+			greenA: '#b6ffb0',
+			greenB: '#8af281',
+			greenC: '#74cf70',
+			greenD: '#1fab54',
+			greenE: '#0d923f',
+			goldA: '#ffd0a9',
+			goldB: '#ffbb71',
+			goldC: '#ff9c39',
+			goldD: '#e07d10',
+			goldE: '#a75a05',
+			redA: '#fca9a9',
+			redB: '#ff8482',
+			redC: '#f9685d',
+			redD: '#e84d39',
+			redE: '#bc2612',
+			maroonA: '#ffbde0',
+			maroonB: '#ff92c6',
+			maroonC: '#ed5fa6',
+			maroonD: '#ca337c',
+			maroonE: '#9e034e',
+			purpleA: '#ddd7ff',
+			purpleB: '#c6b9fc',
+			purpleC: '#aa87ff',
+			purpleD: '#7854ab',
+			purpleE: '#543b78',
+			mintA: '#f5f9e8',
+			mintB: '#edf2df',
+			mintC: '#e0e5cc',
+			grayA: '#f6f7f7',
+			grayB: '#f0f1f2',
+			grayC: '#e3e5e6',
+			grayD: '#d6d8da',
+			grayE: '#babec2',
+			grayF: '#888d93',
+			grayG: '#626569',
+			grayH: '#3b3e40',
+			grayI: '#21242c',
+			kaBlue: '#314453',
+			kaGreen: '#71B307',
+		}
+
+		// Add support for KaTeX's color macros (e.g. \red, \blue, etc.)
+		for (const color in katexColors) {
+			tex = tex.replaceAll(`\\${color}`, `\\color{${katexColors[color]}}`)
+		}
+
+		return tex
+	}
+
+	$: exportFormat, exportRasterScale, exportLossyQualityScale, exportBackgroundColor, exportForegroundColor, renderExportPreview()
+
+	function exportSetColorPicker(alpha=true) {
+		Coloris.setInstance('.export-menu-color-picker', {parent: '#export-dialog', alpha: alpha, swatches: []})
+	}
+	exportSetColorPicker()
 
 	async function renderExportPreview() {
 		if (typeof editor === 'undefined') return
-		const svg = (await MathJax.tex2svgPromise(getFinalLatexFromEditor())).firstChild
+		const svg = (await MathJax.tex2svgPromise(patchTexForMathJax(getFinalLatexFromEditor()))).firstChild
+
+		// console.log(svg.outerHTML.length)
+		// svg.innerHTML = svg.outerHTML.replace(/[^\x00-\x7F]/g, '')
+		// svg.innerHTML = 'a'
+
+		
+		
+		// Background && Foreground
+		// I'm placing two ampersands
+		// What has JS done to me
+		const styleElement = document.createElement('style')
+		styleElement.innerHTML = `svg{background: ${exportBackgroundColor}}`
+		if (exportForegroundColor != '#000000') {  // Allow other colors
+			styleElement.innerHTML += `*{fill: ${exportForegroundColor}}`
+		}
+		svg.append(styleElement)
+
+
+		
+		// Padding is the bane of my existance
+
+		// console.log(svg.viewBox)
+		// const padding = 1000
+		// svg.viewBox.baseVal.x -= padding
+		// svg.viewBox.baseVal.y -= padding
+		// svg.viewBox.baseVal.width += padding * 2
+		// svg.viewBox.baseVal.height += padding * 2
+		// console.log(svg.viewBox)
+
+		// const SVGNamespace = 'http://www.w3.org/2000/svg'
+
+		// const outerSVG = document.createElementNS(SVGNamespace, 'svg')
+		// console.log(svg.viewBox.baseVal.width)
+		// outerSVG.setAttribute('viewbox', `-${padding} -${padding} ${svg.viewBox.baseVal.width + padding * 2} ${svg.viewBox.baseVal.height + padding * 2}`)
+		// // outerSVG.viewBox.baseVal.setAtt = svg.width + padding * 2
+		// // outerSVG.viewBox.baseVal.height = svg.height + padding * 2
+
+		// const innerSVG = document.createElementNS(SVGNamespace, 'image')
+		// innerSVG.setAttribute('href', `data:image/svg+xml;base64,${btoa(svg.outerHTML)}`)
+		// innerSVG.setAttribute('x', padding + 'px')
+		// innerSVG.setAttribute('y', padding + 'px')
+
+
+		// outerSVG.append(innerSVG)
+
+
+
+		// const backgroundRect = document.createElementNS(SVGNamespace, 'rect')
+		// backgroundRect.setAttribute('x', 0)
+		// backgroundRect.setAttribute('y', 0)
+		// backgroundRect.setAttribute('width', svg.viewBox.baseVal.width)
+		// backgroundRect.setAttribute('height', svg.viewBox.baseVal.height)
+		// backgroundRect.style.fill = exportBackgroundColor
+		// svg.insertBefore(backgroundRect, svg.firstChild)
+		// svg.viewBox.baseVal.x += padding
+		// svg.viewBox.baseVal.y += padding
+
+
+
+		// const viewBoxValues = svg.viewBox.split(' ')
+		// console.log(svg)
+		// console.log(svg.viewBox)
+		
 		if (exportFormat == 'svg') {
-			exportPreview.src = `data:image/svg+xml;base64,${btoa(svg.outerHTML)}`
+			exportPreview.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg.outerHTML)))}`
 			return
 		}
 		const img = document.createElement('img')
-		img.src = `data:image/svg+xml;base64,${btoa(svg.outerHTML)}`
+		img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg.outerHTML)))}`
 		img.onload = () => {
 			const canvas = document.createElement('canvas')
 			exportRes.width = Math.ceil(img.width * exportRasterScale)
@@ -193,12 +330,6 @@
 			canvas.width = Math.ceil(img.width * exportRasterScale)
 			canvas.height = Math.ceil(img.height * exportRasterScale)
 			const ctx = canvas.getContext('2d')
-
-			// Jpeg doesn't support transparency
-			if (exportFormat == 'jpeg') {
-				ctx.fillStyle = exportJpegBackgroundColor
-				ctx.fillRect(0, 0, canvas.width, canvas.height)
-			}
 
 			ctx.drawImage(img, 0, 0, img.width * exportRasterScale, img.height * exportRasterScale)
 			exportPreview.src = canvas.toDataURL(`image/${exportFormat}`, exportLossyQualityScale / 100)
@@ -209,18 +340,41 @@
 		if (hex.startsWith('#')) hex = hex.substring(1)
 		switch (hex.length) {
 			case 3:
-				hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2]
+				hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + 'FF'
 				break
 			case 4:
-				hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2]
+				hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3]
 				break
-			case 8:
-				hex = hex.slice(0, -2)
+			case 6:
+				hex += 'FF'
 				break
 		}
 
 		const bigint = parseInt(hex, 16)
-		return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255]
+		return [(bigint >> 24) & 255, (bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255]
+	}
+
+	function multiplyAlpha(alpha: number, rgb: number[]) {
+		let [r, g, b] = rgb
+		r = Math.round(r * alpha)
+		g = Math.round(g * alpha)
+		b = Math.round(b * alpha)
+		return [r, g, b]
+	}
+
+	const RGBAToHex = rgba => rgba.map(x => x.toString(16).padStart(2, '0')).join('')
+
+	function applyAlphaForForeground(bgHex: string) {
+		const [r, g, b, a] = HexToRGB(bgHex)
+		const [r2, g2, b2] = multiplyAlpha(a/255, [r, g, b])
+
+		// This is awful pls fix
+		const [br, bg, bb, ba] = HexToRGB(darkTheme ? '#242424' : '#FFFFFF')
+		const [br2, bg2, bb2] = multiplyAlpha(1-a/255, [br, bg, bb])
+
+		const [r3, g3, b3] = [r2 + br2, g2 + bg2, b2 + bb2]
+
+		return RGBAToHex([r3, g3, b3, 255])
 	}
 
 	function getUseDarkForegroundBasedOnBackgroundColor(bgHex: string) {
@@ -244,6 +398,8 @@
 	$: darkTheme, document.documentElement.style.setProperty('--radio-button-active-background', darkTheme ? '#56E05280' : '#3AFF3380')
 	$: darkTheme, document.documentElement.style.setProperty('--radio-button-active-border', darkTheme ? '#36A932' : '#60D65C')
 	$: darkTheme, document.documentElement.style.setProperty('--input-background', darkTheme ? '#090909' : '#EEE')
+	$: darkTheme, document.documentElement.style.setProperty('--accent', darkTheme ? '#389535' : '#22BF1D')
+	$: darkTheme, document.documentElement.style.setProperty('--inactive', darkTheme ? '#9993' : '#9993')
 </script>
 
 <main>
@@ -285,7 +441,11 @@
 				texPatcherDialog.showModal()
 			}}
 		>
-		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="11.5" y="11.5" width="77" height="77" rx="8" stroke="black" fill="none" stroke-width="6.8"/><rect x="31.800000000000004" y="0" width="6.8" height="23" rx="3.4"/><rect x="46.6" y="0" width="6.8" height="23" rx="3.4"/><rect x="61.4" y="0" width="6.8" height="23" rx="3.4"/><rect x="0" y="31.800000000000004" width="23" height="6.8" rx="3.4"/><rect x="0" y="46.6" width="23" height="6.8" rx="3.4"/><rect x="0" y="61.4" width="23" height="6.8" rx="3.4"/><rect x="31.800000000000004" y="77" width="6.8" height="23" rx="3.4"/><rect x="46.6" y="77" width="6.8" height="77" rx="3.4"/><rect x="61.4" y="77" width="6.8" height="23" rx="3.4"/><rect x="77" y="31.800000000000004" width="23" height="6.8" rx="3.4"/><rect x="77" y="46.6" width="23" height="6.8" rx="3.4"/><rect x="77" y="61.4" width="23" height="6.8" rx="3.4"/></svg>
+		
+		<!-- If currentColor is semi-opaque, the rectangles overlap each other which looks a bit weird -->
+		<!-- Maybe combine rects into path so that's there's only one shape with no overlap -->
+		<!-- Or make the shapes not overlap but that seems even harder -->
+		<svg xmlns=http://www.w3.org/2000/svg viewBox="0 0 100 100"><style>rect{fill:currentColor}</style><rect x=11.5 y=11.5 width=77 height=77 rx=8 stroke=currentColor fill-opacity=0 stroke-width=6.8/><rect x=31.8 y=0 width=6.8 height=23 rx=3.4/><rect x=46.6 y=0 width=6.8 height=23 rx=3.4/><rect x=61.4 y=0 width=6.8 height=23 rx=3.4/><rect x=0 y=31.8 width=23 height=6.8 rx=3.4/><rect x=0 y=46.6 width=23 height=6.8 rx=3.4/><rect x=0 y=61.4 width=23 height=6.8 rx=3.4/><rect x=31.8 y=77 width=6.8 height=23 rx=3.4/><rect x=46.6 y=77 width=6.8 height=77 rx=3.4/><rect x=61.4 y=77 width=6.8 height=23 rx=3.4/><rect x=77 y=31.8 width=23 height=6.8 rx=3.4/><rect x=77 y=46.6 width=23 height=6.8 rx=3.4/><rect x=77 y=61.4 width=23 height=6.8 rx=3.4/></svg>
 		</button>
 
 		<button
@@ -327,33 +487,41 @@
 	</div>
 	<dialog bind:this={exportDialog} use:closeDialogIfClickedOn id="export-dialog">
 		<div id="export-menu">
+			<div id="export-format-buttons">
+				<RadioButton onclick={() => {exportFormat = 'svg'; exportSetColorPicker()}}>SVG</RadioButton>
+				<RadioButton onclick={() => {exportFormat = 'png'; exportSetColorPicker()}} active={true}>PNG</RadioButton>
+				<RadioButton onclick={() => {exportFormat = 'jpeg'; exportSetColorPicker(false)}}>JPEG</RadioButton>
+				<RadioButton onclick={() => {exportFormat = 'webp'; exportSetColorPicker()}}>WebP</RadioButton>
+			</div>
 			<div id="export-options">
-				<div id="export-option-buttons">
-					<RadioButton onclick={() => (exportFormat = 'svg')} active={true}>SVG</RadioButton>
-					<RadioButton onclick={() => (exportFormat = 'png')}>PNG</RadioButton>
-					<RadioButton onclick={() => (exportFormat = 'jpeg')}>JPEG</RadioButton>
-					<RadioButton onclick={() => (exportFormat = 'webp')}>WebP</RadioButton>
-				</div>
-
-				<img bind:this={exportPreview} src="" alt="" />
-
-				<div class={['png', 'jpeg', 'webp'].includes(exportFormat) ? '' : 'hidden'}>
-					<label for="export-ex-scale-input">Scale</label>
-					<input id="export-ex-scale-input" bind:value={exportRasterScale} type="number" />
-				</div>
-				<div class={['jpeg', 'webp'].includes(exportFormat) ? '' : 'hidden'}>
-					<label for="export-quality-input">Quality</label>
-					<input id="export-quality-input" bind:value={exportLossyQualityScale} type="number" />
-				</div>
-				<div class={exportFormat == 'jpeg' ? '' : 'hidden'}>
-					<label for="export-jpeg-background-color">Background Color (jpeg doesn't support transparency)</label>
+				<div>
+					<!-- Background Color -->
+					<label for="export-background-color">Background</label>
 					<input
-						style="background: {exportJpegBackgroundColor}; color: {getUseDarkForegroundBasedOnBackgroundColor(exportJpegBackgroundColor) ? 'black' : 'white'}"
-						id="export-jpeg-background-color"
-						bind:value={exportJpegBackgroundColor}
-						type="text"
+						style="background: {exportBackgroundColor}; color: {getUseDarkForegroundBasedOnBackgroundColor(applyAlphaForForeground(exportBackgroundColor)) ? 'black' : 'white'}"
+						id="export-background-color"
+						class='export-menu-color-picker'
+						bind:value={exportBackgroundColor}
 						data-coloris
 					/>
+					<!-- Foreground Color -->
+					<label for="export-foreground-color">Foreground</label>
+					<input
+						style="background: {exportForegroundColor}; color: {getUseDarkForegroundBasedOnBackgroundColor(applyAlphaForForeground(exportForegroundColor)) ? 'black' : 'white'}"
+						id="export-foreground-color"
+						class='export-menu-color-picker'
+						bind:value={exportForegroundColor}
+						data-coloris
+					/>
+				</div>
+				<div>
+					<!-- Scale -->
+					<label for="export-ex-scale-input" class={['png','jpeg','webp'].includes(exportFormat)?'':'hidden'}>Scale</label>
+					<input id="export-ex-scale-input" class={['png','jpeg','webp'].includes(exportFormat)?'':'hidden'} bind:value={exportRasterScale} type="number" />
+					
+					<!-- Quality -->
+					<label for="export-quality-input" class={['jpeg','webp'].includes(exportFormat)?'':'hidden'}>Quality</label>
+					<input id="export-quality-input" class={['jpeg','webp'].includes(exportFormat)?'':'hidden'} bind:value={exportLossyQualityScale} type="number" />
 				</div>
 			</div>
 			<div id="export-preview-wrapper">
@@ -368,10 +536,12 @@
 	<dialog bind:this={texPatcherDialog} use:closeDialogIfClickedOn id="tex-patcher-dialog">
 		<div id="tex-patcher-menu">
 			<h2>TeX Patcher (WIP)</h2>
-			<label>
+			<TexPatcherInput bind:value={texPatcherConfig.autoNewlines} on:input={renderPreview} name='Auto Newlines' description='Automatically insert a `\\` at the end of each line' />
+			<TexPatcherInput bind:value={texPatcherConfig.commentMarker} on:input={renderPreview} name='Custom Comment Marker' description="Change the comment marker from `%` to whatever you'd like" />
+			<TexPatcherInput bind:value={texPatcherConfig.baseEnvironment} on:input={renderPreview} name='Base Environment' description='Automatically add a `\begin` and `\end` for this environment' />
+			<TexPatcherInput bind:value={texPatcherConfig.equalsSignToAmpersandEquals} on:input={renderPreview} name='Aligned Equal Signs' description='Replace `=` with `&=`' />
+			<!-- <label>
 				<input type="checkbox" bind:checked={texPatcherConfig.autoNewlines} on:change={renderPreview}>
-				<!-- For some reason there need to be four backslashes here -->
-				<!-- Maybe \b and \e aren't escape sequences, which is why the code below doesn't need double backslashes? idk -->
 				Insert a "\\\\" with every newline
 			</label>
 			<label>
@@ -385,7 +555,7 @@
 			<label>
 				<input type="checkbox" bind:checked={texPatcherConfig.equalsSignToAmpersandEquals} on:change={renderPreview}>
 				Replace every equals sign with an ampersand equals ("&=")
-			</label>
+			</label> -->
 		</div>
 	</dialog>
 </main>
@@ -402,6 +572,15 @@
 	dialog {
 		background-color: var(--background);
 		color: var(--foreground);
+		filter: drop-shadow(0 0 20px #0002);
+
+		// &::backdrop {
+		// 	backdrop-filter: blur(20px);
+		// }
+	}
+
+	* {
+		transition: background-color 300ms, color 300ms;
 	}
 
 	:global(:root) {
@@ -417,6 +596,13 @@
 		--radio-button-active-background: dasd;
 		--radio-button-active-border: asdwq;
 		--input-background: asddsad;
+		--accent: asdsad;
+		--inactive: asdddsa;
+	}
+
+	:global(*::selection) {
+		color: white;
+		background-color: var(--accent);
 	}
 
 	.radio-button.active {
@@ -488,7 +674,7 @@
 	#tex-patcher-menu {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 2rem;
 	}
 
 	#tex-patcher-menu h2 {
@@ -502,10 +688,37 @@
 	}
 
 	#export-options {
-		height: 8rem;
+		display: flex;
+		gap: 1rem;
+		margin-block: 0.6rem;
+
+		> * {
+			display: grid;
+			grid-template-columns: min-content min-content;
+			align-items: center;
+			row-gap: 0.15rem;
+			column-gap: 0.1rem;
+			grid-auto-rows: minmax(auto, max-content);
+			grid-auto-columns: minmax(auto, max-content);
+
+			input {
+				width: 9ch;
+				text-align: center;
+			}
+
+			label {
+				width: 10ch;
+				text-align: right;
+			}
+
+			> * {
+				padding: 0.4rem;
+				padding-inline: 0.5rem;
+			}
+		}
 	}
 
-	#export-option-buttons {
+	#export-format-buttons {
 		display: grid;
 		grid-auto-flow: column;
 		grid-auto-columns: 1fr;
@@ -546,22 +759,31 @@
 		opacity: 0.8;
 	}
 
-	input:not([type]), input[type=text] {
-		box-sizing: unset;
-		width: 7ch;
+	input {
 		font-family: 'JetBrains Mono';
+		background: var(--inactive);
+		padding: 0.15rem;
+		border-radius: 0.35rem;
+		font-size: 0.95rem;
+		transition: all 50ms;
+		outline: 0 solid var(--accent);
+		padding-inline: 0.3rem;
 		margin-bottom: 0.1rem;
-		border-radius: 0.3rem;
-		padding-inline: 0.2rem;
+		box-sizing: unset;
+
+		&:focus {
+			outline: 3px solid var(--accent)
+		}
 	}
 
-	input#export-ex-scale-input {
-		width: 2ch;
-	}
-
-	input#export-quality-input {
-		width: 3ch;
-	}
+	// input {
+	// 	box-sizing: unset;
+	// 	width: 7ch;
+	// 	font-family: 'JetBrains Mono';
+	// 	margin-bottom: 0.1rem;
+	// 	border-radius: 0.3rem;
+	// 	padding-inline: 0.2rem;
+	// }
 
 	#export-instructions {
 		margin-top: 2rem;
