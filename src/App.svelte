@@ -473,7 +473,7 @@
 			{/if}
 		</button>
 
-		<a href="https://github.com/geode42/geode42-matheditor" aria-label="Go to source code" target="_blank" rel="noreferrer noopener" style:color={darkTheme ? 'white' : 'black'}>
+		<a href="https://github.com/geode42/mathedit" aria-label="Go to source code" target="_blank" rel="noreferrer noopener" style:color={darkTheme ? 'white' : 'black'}>
 			<!-- github-mark -->
 			<svg aria-hidden="true" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg"
 				><path

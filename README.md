@@ -1,19 +1,19 @@
-# geode42-matheditor
+# mathedit
 
-This repo contains the source code for my LaTeX math editor, which you can find at [math.geode42.com](https://math.geode42.com)
+![Screenshot of the website](readme-image.webp)
 
-## Running locally
-Clone this repo, cd into the directory that's created, then run `npm install`, `npm run dev`
+mathedit is a website for editing and exporting LaTeX math.<br>
+It's kinda' like Code Cogs' (multiple?) editors and similar, but with some notable improvements:
+- Rendering happens client-side for speed and privacy (as does the whole website)
+- mathedit uses the Monaco editor (aka VSCode!), and includes syntax highlighting, auto-complete, and snippets
+- The preview uses KaTeX specifically, which is kinda' annoying because MathJax is still needed for exporting (and they have slight syntax variations), but means you get super fast previews
+- It's free and open source :)
 
-## Credits
-The website is built with [Vite](https://vitejs.dev/) and [Svelte](https://svelte.dev/)
+You can try out the website at [mathedit.dev](https://mathedit.dev)
 
-The editor portion of the editor uses the [Monaco Editor](https://microsoft.github.io/monaco-editor/) which is a pretty good editor that's used in the VSCode editor
-
-The preview is rendered with [KaTeX](https://katex.org/) because speed
-
-The image output is rendered with [MathJax](https://www.mathjax.org/)'s `tex2svgPromise` function because KaTeX doesn't have one
-
-The JPEG export tab uses the [Coloris](https://coloris.js.org/) color picker
-
-
+## Stuff used
+[Vite](https://vitejs.dev/) + [Svelte](https://svelte.dev/) for the website itself<br>
+[Monaco](https://microsoft.github.io/monaco-editor/) for the the actual LaTeX editor<br>
+[KaTeX](https://katex.org/) for the preview because it's really fast<br>
+[MathJax](https://www.mathjax.org/) for the export tab because KaTeX can't export to SVG<br>
+[Coloris](https://coloris.js.org/) for the color picker in the export tab
